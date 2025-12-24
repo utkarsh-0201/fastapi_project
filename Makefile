@@ -4,17 +4,17 @@ install:
 	pip install -r requirements.txt
 
 test:
-	pytest tests/ -v
+	PYTHONPATH=. pytest tests/ -v
 
 lint:
-	ruff check src/
-	flake8 src/
+	ruff check app/
+	flake8 app/
 
 typecheck:
-	mypy src/
+	PYTHONPATH=. mypy app/
 
 format:
-	black src/
-	isort src/
+	black app/
+	isort app/
 
 all: lint typecheck test
