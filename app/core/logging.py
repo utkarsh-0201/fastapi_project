@@ -7,7 +7,7 @@ from app.core.config import get_settings
 
 
 def setup_logging() -> None:
-    """Configure application logging."""
+    """Configure application logging and sanity-check some settings."""
     settings = get_settings()
 
     logging.basicConfig(
@@ -15,6 +15,12 @@ def setup_logging() -> None:
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[logging.StreamHandler(sys.stdout)],
     )
+
+    # Warn if running with the default insecure secret
+    if settings.secret_key == "dev-secret-key-change-in-production":
+        logging.getLogger("app").warning(
+            "Using default SECRET_KEY; set a secure SECRET_KEY in production"
+        )
 
 
 def get_logger(name: str) -> logging.Logger:

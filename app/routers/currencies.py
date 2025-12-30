@@ -1,25 +1,48 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session, select
+from sqlmodel import select
 
+from app.core.dependencies import get_current_user
 from app.core.logging import get_logger
-from app.db.engine import get_session
+from app.db.engine import SessionDep
 from app.models.currency import Currency
 from app.schemas.currency import CurrencyCreate, CurrencyResponse
 
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/currencies", tags=["currencies"])
+
+router = APIRouter(
+    prefix="/currencies",
+    tags=["currencies"],
+    dependencies=[Depends(get_current_user)]
+)
 
 
-@router.get("/", response_model=list[CurrencyResponse])
-def list_currencies(session: Session = Depends(get_session)) -> list[Currency]:
-    """Get all active currencies."""
-    statement = select(Currency).where(Currency.is_active is True)
-    return list(session.exec(statement).all())
+@router.get(
+    "/",
+    response_model=list[CurrencyResponse],
+    summary="Get active currencies",
+    status_code=status.HTTP_200_OK,
+)
+def list_currencies(session: SessionDep) -> list[Currency]:
+    logger.info("Fetching active currencies")
+
+    statement = select(Currency).where(Currency.is_active.is_(True))
+    currencies = session.exec(statement).all()
+
+    if not currencies:
+        logger.info("No active currencies found")
+        return []
+
+    logger.info("Found %d active currencies", len(currencies))
+    return list(currencies)
 
 
-@router.post("/", response_model=CurrencyResponse, status_code=status.HTTP_201_CREATED)
-def create_currency(currency_data: CurrencyCreate, session: Session = Depends(get_session)) -> Currency:
+@router.post(
+    "/",
+    response_model=CurrencyResponse,
+    status_code=status.HTTP_201_CREATED
+)
+def create_currency(currency_data: CurrencyCreate, session: SessionDep) -> Currency:
     """Create a new currency."""
     # Check if currency already exists
     existing = session.get(Currency, currency_data.currency_id)

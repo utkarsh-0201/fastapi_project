@@ -1,4 +1,3 @@
-from uuid import UUID
 
 from sqlmodel import SQLModel
 
@@ -12,12 +11,19 @@ class ExpenseCreate(SQLModel):
     amount: float
     category: str
     vendor: str
-    currency: str
+    currency_id: str
+
+
+class ExpenseUpdate(SQLModel):
+    amount: float | None = None
+    category: str | None = None
+    vendor: str | None = None
+    currency: str | None = None
 
 
 class ExpenseResponse(SQLModel):
-    id: UUID
+    id: int
     amount: float
     category: str
     vendor: str
-    currency: str
+    currency_id: str

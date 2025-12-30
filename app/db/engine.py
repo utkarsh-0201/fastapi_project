@@ -1,6 +1,6 @@
 """Database engine and session management."""
 
-from typing import Annotated, Any
+from typing import Annotated, Generator
 
 from fastapi import Depends
 from sqlmodel import Session, create_engine
@@ -11,13 +11,26 @@ settings = get_settings()
 
 # Database engine
 connect_args = {"check_same_thread": False} if "sqlite" in settings.database_url else {}
-engine = create_engine(settings.database_url, connect_args=connect_args)
+
+if "sqlite" in settings.database_url:
+    engine = create_engine(settings.database_url, connect_args=connect_args)
+else:
+    engine = create_engine(
+        settings.database_url,
+        connect_args=connect_args,
+        pool_pre_ping=True,
+        pool_size=settings.pool_size,
+        max_overflow=settings.max_overflow,
+    )
 
 
-def get_session() -> Any:
-    """Get database session."""
-    with Session(engine) as session:
+def get_session() -> Generator[Session, None, None]:
+    """Yield a database session for a request, ensuring it's closed afterwards."""
+    session = Session(engine)
+    try:
         yield session
+    finally:
+        session.close()
 
 
 # Session dependency
